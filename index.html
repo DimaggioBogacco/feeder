@@ -10,11 +10,12 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
       :root {
-        --bg-main: #ffffff;
+        --bg-main: #fcfcfc;
         --bg-card: #ffffff;
         --text-main: #1a1a1a;
         --text-secondary: #70757a;
-        --border-color: #e8eaed;
+        --border-color: #9aa0a6;
+        --card-border: #eeeeee;
         --primary-blue: #1a73e8;
         --primary-blue-hover: #1765cc;
         --primary-blue-active: #1557b0;
@@ -30,8 +31,9 @@
         --bg-card: #1e1e1e;
         --text-main: #e8eaed;
         --text-secondary: #9aa0a6;
-        --border-color: #3c4043;
-        --primary-blue: #4285f4; /* Slightly softer for dark mode eyes */
+        --border-color: #5f6368;
+        --card-border: #333333;
+        --primary-blue: #4285f4;
         --primary-blue-hover: #3b78db;
         --primary-blue-active: #3367d6;
         --menu-bg: #2d2e31;
@@ -45,9 +47,7 @@
         padding: 0;
         color: var(--text-main);
         -webkit-tap-highlight-color: transparent;
-        transition:
-          background 0.3s,
-          color 0.3s;
+        transition: background 0.3s;
       }
 
       #status-bar {
@@ -56,12 +56,16 @@
         text-align: center;
         color: white;
         font-weight: 400;
-        transition: background-color 0.5s ease;
         position: sticky;
         top: 0;
         z-index: 100;
         font-size: 16px;
+        transition:
+          background-color 0.3s,
+          color 0.3s;
       }
+
+      /* Bold 600 for the time values */
       .time-bold {
         font-weight: 600;
       }
@@ -92,13 +96,14 @@
       .input-group {
         position: relative;
         width: 100%;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
       }
 
+      /* Unified Focus State for Input and Textarea */
       input,
       textarea {
         width: 100%;
-        border: 1px solid var(--border-color);
+        border: 1.5px solid var(--border-color);
         border-radius: 12px;
         font-size: 18px;
         box-sizing: border-box;
@@ -107,11 +112,14 @@
         display: block;
         background: var(--bg-card);
         color: var(--text-main);
-        transition: border-color 0.2s;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
       }
       input:focus,
       textarea:focus {
         border-color: var(--primary-blue);
+        box-shadow: 0 0 0 1px var(--primary-blue);
       }
 
       input#volume {
@@ -134,7 +142,6 @@
         pointer-events: none;
       }
 
-      /* Button Hover & Pressed States */
       .btn-submit {
         width: 100%;
         padding: 16px;
@@ -150,14 +157,16 @@
           background 0.2s,
           transform 0.1s;
       }
+
       @media (hover: hover) {
         .btn-submit:hover {
           background: var(--primary-blue-hover);
         }
       }
+
       .btn-submit:active {
         background: var(--primary-blue-active);
-        transform: scale(0.98);
+        transform: scale(0.97);
       }
 
       .stats-bar {
@@ -165,16 +174,25 @@
         justify-content: space-between;
         align-items: center;
         padding: 16px 0;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--card-border);
         font-weight: 500;
         margin-top: 10px;
         color: var(--text-secondary);
       }
+
       .stats-label {
         display: flex;
         align-items: center;
         gap: 12px;
       }
+
+      #volume-icon-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 32px;
+      }
+
       .stats-icon {
         font-size: 32px;
       }
@@ -189,9 +207,8 @@
         margin-bottom: 12px;
       }
 
-      /* Log Card States */
       .log-card {
-        border: 1px solid var(--border-color);
+        border: 1px solid var(--card-border);
         border-radius: 12px;
         margin-bottom: 8px;
         padding: 16px;
@@ -201,14 +218,12 @@
         font-weight: 600;
         background: var(--bg-card);
         transition: all 0.15s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
       }
       .log-card.selected {
         background-color: var(--selection-bg);
         border-color: var(--primary-blue);
-      }
-      .log-card:active:not(.selected) {
-        background-color: var(--selection-bg);
-        transform: scale(0.99);
+        box-shadow: none;
       }
 
       .log-note {
@@ -225,7 +240,7 @@
         padding: 12px 4px;
         color: var(--text-secondary);
         font-size: 14px;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--card-border);
         margin-bottom: 10px;
       }
 
@@ -234,11 +249,11 @@
         display: none;
         background: var(--menu-bg);
         border-radius: 12px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
         width: 160px;
         z-index: 1000;
         overflow: hidden;
-        border: 1px solid var(--border-color);
+        border: 1px solid var(--card-border);
         color: var(--text-main);
       }
       .menu-item {
@@ -254,7 +269,7 @@
       }
       .menu-item.delete {
         color: #f28b82;
-        border-top: 1px solid var(--border-color);
+        border-top: 1px solid var(--card-border);
       }
     </style>
   </head>
@@ -287,7 +302,8 @@
 
       <div class="stats-bar">
         <div class="stats-label">
-          <span id="volume-icon-container"></span><span>Last 24h</span>
+          <span id="volume-icon-container"></span>
+          <span>Last 24h</span>
         </div>
         <span id="rolling-24h">0 ml</span>
       </div>
@@ -335,13 +351,12 @@
       let lastFeedingTimestamp = null;
       const menu = document.getElementById("context-menu");
       const statusBar = document.getElementById("status-bar");
-      const themeBtn = document.getElementById("theme-toggle");
 
-      themeBtn.onclick = () => {
+      document.getElementById("theme-toggle").onclick = (e) => {
         const current = document.body.getAttribute("data-theme");
         const target = current === "dark" ? "light" : "dark";
         document.body.setAttribute("data-theme", target);
-        themeBtn.innerHTML =
+        e.currentTarget.innerHTML =
           target === "dark"
             ? '<i class="ph-fill ph-sun"></i>'
             : '<i class="ph ph-moon"></i>';
@@ -352,28 +367,13 @@
           `${e.target.value.length} / 140`;
       };
 
-      function updateTimer() {
-        if (!lastFeedingTimestamp) return;
-        const diff = Date.now() - lastFeedingTimestamp;
-        const hours = Math.floor(diff / 3600000);
-        const minutes = Math.floor((diff % 3600000) / 60000);
-        document.getElementById("timer-text").innerHTML =
-          `<span class="time-bold">${hours}h ${minutes}m</span>`;
-
-        if (diff < 3600000)
-          statusBar.style.backgroundColor = "var(--status-green)";
-        else if (diff < 9000000)
-          statusBar.style.backgroundColor = "var(--status-yellow)";
-        else statusBar.style.backgroundColor = "var(--status-red)";
-        statusBar.style.color =
-          diff >= 3600000 && diff < 9000000 ? "#1a1a1a" : "white";
-      }
-      setInterval(updateTimer, 30000);
-
       document.getElementById("logBtn").onclick = () => {
         const vol = document.getElementById("volume").value;
         const note = document.getElementById("note").value;
         if (!vol) return;
+
+        if ("vibrate" in navigator) navigator.vibrate(200);
+
         push(logsRef, {
           amount: parseFloat(vol),
           note: note,
@@ -381,6 +381,7 @@
         });
         document.getElementById("volume").value = "";
         document.getElementById("note").value = "";
+        document.getElementById("char-counter").innerText = "0 / 140";
       };
 
       onValue(logsRef, (snapshot) => {
@@ -442,11 +443,28 @@
         setupInteractions();
       });
 
-      function clearSelection() {
-        document
-          .querySelectorAll(".log-card")
-          .forEach((c) => c.classList.remove("selected"));
+      function updateTimer() {
+        if (!lastFeedingTimestamp) return;
+        const diff = Date.now() - lastFeedingTimestamp;
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+
+        // Apply 600 weight to hours and minutes
+        document.getElementById("timer-text").innerHTML =
+          `<span class="time-bold">${hours}h ${minutes}m</span>`;
+
+        if (diff < 3600000) {
+          statusBar.style.backgroundColor = "var(--status-green)";
+          statusBar.style.color = "white";
+        } else if (diff < 9000000) {
+          statusBar.style.backgroundColor = "var(--status-yellow)";
+          statusBar.style.color = "#1a1a1a"; // Darker text for yellow banner
+        } else {
+          statusBar.style.backgroundColor = "var(--status-red)";
+          statusBar.style.color = "white";
+        }
       }
+      setInterval(updateTimer, 30000);
 
       function setupInteractions() {
         document.querySelectorAll(".log-card").forEach((card) => {
@@ -454,8 +472,10 @@
           const id = card.getAttribute("data-id");
           const handleMenu = (e) => {
             e.preventDefault();
-            clearSelection();
-            card.classList.add("selected"); // Highlight current card
+            document
+              .querySelectorAll(".log-card")
+              .forEach((c) => c.classList.remove("selected"));
+            card.classList.add("selected");
             currentActiveLogId = id;
             const x = e.pageX || (e.touches ? e.touches[0].pageX : 0);
             const y = e.pageY || (e.touches ? e.touches[0].pageY : 0);
@@ -465,9 +485,10 @@
           };
           card.oncontextmenu = handleMenu;
           card.ontouchstart = (e) => {
-            timer = setTimeout(() => handleMenu(e), 600);
+            timer = setTimeout(() => handleMenu(e), 1000);
           };
           card.ontouchend = () => clearTimeout(timer);
+          card.ontouchmove = () => clearTimeout(timer);
         });
       }
 
@@ -486,11 +507,12 @@
 
       window.onclick = () => {
         menu.style.display = "none";
-        clearSelection();
+        document
+          .querySelectorAll(".log-card")
+          .forEach((c) => c.classList.remove("selected"));
       };
       window.onscroll = () => {
         menu.style.display = "none";
-        clearSelection();
       };
     </script>
   </body>
