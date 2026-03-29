@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>Feeding Tracker</title>
+    <title>Baby Feed Tracker</title>
     <style>
       :root {
         --primary-blue: #1a73e8;
@@ -26,8 +26,21 @@
       h1 {
         font-size: 32px;
         font-weight: 800;
-        margin: 20px 0;
+        margin: 20px 0 10px 0;
       }
+
+      /* Last Fed Timer Style */
+      .timer-banner {
+        font-size: 16px;
+        color: var(--text-secondary);
+        margin-bottom: 25px;
+        font-weight: 500;
+      }
+      .timer-bold {
+        color: var(--primary-blue);
+        font-weight: 700;
+      }
+
       input {
         width: 100%;
         padding: 16px;
@@ -35,7 +48,7 @@
         border-radius: 12px;
         font-size: 18px;
         box-sizing: border-box;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
       }
       .btn-submit {
         width: 100%;
@@ -47,6 +60,7 @@
         font-size: 18px;
         font-weight: 700;
         cursor: pointer;
+        margin-top: 5px;
       }
 
       .stats-bar {
@@ -54,7 +68,8 @@
         justify-content: space-between;
         padding: 16px 0;
         border-bottom: 1px solid var(--border-color);
-        font-weight: 600;
+        font-weight: 500;
+        margin-top: 10px;
       }
       .day-section {
         margin-top: 24px;
@@ -62,11 +77,10 @@
       .day-title {
         color: var(--text-secondary);
         font-size: 14px;
-        font-weight: 400;
+        font-weight: 600;
         margin-bottom: 12px;
       }
 
-      /* Log Card with Long Press Support */
       .log-card {
         border: 1px solid var(--border-color);
         border-radius: 12px;
@@ -74,14 +88,25 @@
         padding: 16px;
         display: flex;
         justify-content: space-between;
-        font-weight: 500;
+        align-items: center;
+        font-weight: 600;
         cursor: pointer;
         user-select: none;
         -webkit-user-select: none;
-        transition: background 0.2s;
+        transition: background 0.1s;
       }
       .log-card:active {
         background: #f1f3f4;
+      }
+      .log-time-group {
+        display: flex;
+        flex-direction: column;
+      }
+      .log-note {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 400;
+        margin-top: 4px;
       }
 
       .day-summary {
@@ -94,7 +119,7 @@
         margin-bottom: 10px;
       }
 
-      /* Contextual Menu UI */
+      /* Contextual Menu */
       #context-menu {
         position: fixed;
         display: none;
@@ -112,7 +137,6 @@
         gap: 10px;
         font-size: 15px;
         cursor: pointer;
-        color: var(--text-main);
       }
       .menu-item:hover {
         background: #f8f9fa;
@@ -125,12 +149,17 @@
   </head>
   <body>
     <h1>Log feeding</h1>
+    <div id="last-fed-display" class="timer-banner">
+      Last fed: <span class="timer-bold">--</span> ago
+    </div>
+
     <input
       type="number"
       id="volume"
       placeholder="How many ml"
       inputmode="decimal"
     />
+    <input type="text" id="note" placeholder="Note (optional)" />
     <button class="btn-submit" id="logBtn">Submit</button>
 
     <div class="stats-bar">
@@ -172,17 +201,35 @@
       const logsRef = ref(db, "feedings");
 
       let currentActiveLogId = null;
+      let lastFeedingTimestamp = null;
       const menu = document.getElementById("context-menu");
 
-      // SUBMIT LOG
+      // TIMER LOGIC
+      function updateTimer() {
+        if (!lastFeedingTimestamp) return;
+        const diff = Date.now() - lastFeedingTimestamp;
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        document.querySelector(".timer-bold").innerText =
+          `${hours}h ${minutes}m`;
+      }
+      setInterval(updateTimer, 30000); // Update every 30 seconds
+
+      // SUBMIT
       document.getElementById("logBtn").onclick = () => {
         const vol = document.getElementById("volume").value;
+        const note = document.getElementById("note").value;
         if (!vol) return;
-        push(logsRef, { amount: parseFloat(vol), timestamp: Date.now() });
+        push(logsRef, {
+          amount: parseFloat(vol),
+          note: note,
+          timestamp: Date.now(),
+        });
         document.getElementById("volume").value = "";
+        document.getElementById("note").value = "";
       };
 
-      // RENDER & SYNC
+      // SYNC & RENDER
       onValue(logsRef, (snapshot) => {
         const data = snapshot.val();
         const container = document.getElementById("history-container");
@@ -196,9 +243,11 @@
         const entries = Object.entries(data).sort(
           (a, b) => b[1].timestamp - a[1].timestamp,
         );
+        lastFeedingTimestamp = entries[0][1].timestamp;
+        updateTimer();
 
         // Stats
-        const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+        const oneDayAgo = Date.now() - 86400000;
         const total24h = entries
           .filter((e) => e[1].timestamp > oneDayAgo)
           .reduce((s, e) => s + e[1].amount, 0);
@@ -226,51 +275,52 @@
               hour12: false,
             });
             dayTotal += log.amount;
-            dayHtml += `<div class="log-card" data-id="${log.id}"><span>${time}</span><span>${log.amount} ml</span></div>`;
+            dayHtml += `
+                        <div class="log-card" data-id="${log.id}">
+                            <div class="log-time-group">
+                                <span>${time}</span>
+                                ${log.note ? `<span class="log-note">${log.note}</span>` : ""}
+                            </div>
+                            <span>${log.amount} ml</span>
+                        </div>`;
           });
           dayHtml += `<div class="day-summary"><span>${dayLogs.length} times</span><span>${dayTotal} ml</span></div></div>`;
           container.innerHTML += dayHtml;
         }
-
         setupInteractions();
       });
 
-      // INTERACTION LOGIC (LONG PRESS / RIGHT CLICK)
       function setupInteractions() {
         document.querySelectorAll(".log-card").forEach((card) => {
           let timer;
           const id = card.getAttribute("data-id");
-
           const showMenu = (e) => {
             e.preventDefault();
             currentActiveLogId = id;
             menu.style.display = "block";
-            menu.style.left = `${Math.min(e.pageX, window.innerWidth - 160)}px`;
-            menu.style.top = `${e.pageY}px`;
+            menu.style.left = `${Math.min(e.pageX || e.touches[0].pageX, window.innerWidth - 160)}px`;
+            menu.style.top = `${e.pageY || e.touches[0].pageY}px`;
           };
-
           card.oncontextmenu = showMenu;
           card.ontouchstart = (e) => {
-            timer = setTimeout(() => showMenu(e.touches[0]), 600);
+            timer = setTimeout(() => showMenu(e), 600);
           };
           card.ontouchend = () => clearTimeout(timer);
         });
       }
 
-      // MENU ACTIONS
       document.getElementById("menu-delete").onclick = () => {
-        if (confirm("Delete this log?"))
+        if (confirm("Delete?"))
           remove(ref(db, `feedings/${currentActiveLogId}`));
         menu.style.display = "none";
       };
 
       document.getElementById("menu-edit").onclick = () => {
-        const newVol = prompt("Enter new volume (ml):");
-        if (newVol && !isNaN(newVol)) {
+        const newVol = prompt("New volume (ml):");
+        if (newVol)
           update(ref(db, `feedings/${currentActiveLogId}`), {
             amount: parseFloat(newVol),
           });
-        }
         menu.style.display = "none";
       };
 
