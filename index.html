@@ -10,21 +10,44 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
       :root {
-        --primary-blue: #1a73e8;
+        --bg-main: #ffffff;
+        --bg-card: #ffffff;
         --text-main: #1a1a1a;
         --text-secondary: #70757a;
         --border-color: #e8eaed;
+        --primary-blue: #1a73e8;
+        --primary-blue-hover: #1765cc;
+        --primary-blue-active: #1557b0;
         --status-green: #34a853;
         --status-yellow: #fbbc05;
         --status-red: #ea4335;
+        --menu-bg: #ffffff;
+        --selection-bg: #f1f3f4;
       }
+
+      [data-theme="dark"] {
+        --bg-main: #121212;
+        --bg-card: #1e1e1e;
+        --text-main: #e8eaed;
+        --text-secondary: #9aa0a6;
+        --border-color: #3c4043;
+        --primary-blue: #4285f4; /* Slightly softer for dark mode eyes */
+        --primary-blue-hover: #3b78db;
+        --primary-blue-active: #3367d6;
+        --menu-bg: #2d2e31;
+        --selection-bg: #303134;
+      }
+
       body {
         font-family: -apple-system, sans-serif;
-        background: #ffffff;
+        background: var(--bg-main);
         margin: 0;
         padding: 0;
         color: var(--text-main);
         -webkit-tap-highlight-color: transparent;
+        transition:
+          background 0.3s,
+          color 0.3s;
       }
 
       #status-bar {
@@ -43,6 +66,18 @@
         font-weight: 600;
       }
 
+      #theme-toggle {
+        position: absolute;
+        right: 20px;
+        top: 85px;
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 24px;
+        cursor: pointer;
+        z-index: 5;
+      }
+
       .main-content {
         padding: 20px;
         max-width: 500px;
@@ -54,46 +89,75 @@
         margin: 20px 0;
       }
 
-      /* Input Styling */
+      .input-group {
+        position: relative;
+        width: 100%;
+        margin-bottom: 10px;
+      }
+
       input,
       textarea {
         width: 100%;
-        border: 1px solid #ced4da;
+        border: 1px solid var(--border-color);
         border-radius: 12px;
         font-size: 18px;
         box-sizing: border-box;
-        margin-bottom: 10px;
         outline: none;
         font-family: inherit;
+        display: block;
+        background: var(--bg-card);
+        color: var(--text-main);
+        transition: border-color 0.2s;
       }
       input:focus,
       textarea:focus {
         border-color: var(--primary-blue);
       }
 
-      /* Volume input specific height */
       input#volume {
         padding: 16px;
         height: 56px;
       }
-
-      /* Note input set to twice the height of volume input */
       textarea#note {
         padding: 16px;
-        height: 112px; /* 56px * 2 */
+        height: 112px;
         resize: none;
+        padding-bottom: 30px;
       }
 
+      #char-counter {
+        position: absolute;
+        bottom: 10px;
+        right: 12px;
+        font-size: 12px;
+        color: var(--text-secondary);
+        pointer-events: none;
+      }
+
+      /* Button Hover & Pressed States */
       .btn-submit {
         width: 100%;
         padding: 16px;
         background: var(--primary-blue);
-        color: white;
+        color: #fff;
         border: none;
         border-radius: 12px;
         font-size: 18px;
         font-weight: 700;
         cursor: pointer;
+        margin-top: 5px;
+        transition:
+          background 0.2s,
+          transform 0.1s;
+      }
+      @media (hover: hover) {
+        .btn-submit:hover {
+          background: var(--primary-blue-hover);
+        }
+      }
+      .btn-submit:active {
+        background: var(--primary-blue-active);
+        transform: scale(0.98);
       }
 
       .stats-bar {
@@ -104,7 +168,7 @@
         border-bottom: 1px solid var(--border-color);
         font-weight: 500;
         margin-top: 10px;
-        color: #555;
+        color: var(--text-secondary);
       }
       .stats-label {
         display: flex;
@@ -125,6 +189,7 @@
         margin-bottom: 12px;
       }
 
+      /* Log Card States */
       .log-card {
         border: 1px solid var(--border-color);
         border-radius: 12px;
@@ -134,17 +199,16 @@
         justify-content: space-between;
         align-items: center;
         font-weight: 600;
-        user-select: none;
-        cursor: pointer;
+        background: var(--bg-card);
         transition: all 0.15s ease;
       }
-      .log-card:hover {
-        background-color: #f8f9fa;
-        border-color: #d1d5db;
+      .log-card.selected {
+        background-color: var(--selection-bg);
+        border-color: var(--primary-blue);
       }
-      .log-card:active {
-        background-color: #f1f3f4;
-        transform: scale(0.98);
+      .log-card:active:not(.selected) {
+        background-color: var(--selection-bg);
+        transform: scale(0.99);
       }
 
       .log-note {
@@ -153,6 +217,7 @@
         font-weight: 400;
         margin-top: 4px;
         display: block;
+        white-space: pre-wrap;
       }
       .day-summary {
         display: flex;
@@ -167,13 +232,14 @@
       #context-menu {
         position: absolute;
         display: none;
-        background: white;
+        background: var(--menu-bg);
         border-radius: 12px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         width: 160px;
         z-index: 1000;
         overflow: hidden;
         border: 1px solid var(--border-color);
+        color: var(--text-main);
       }
       .menu-item {
         padding: 14px 16px;
@@ -182,17 +248,13 @@
         display: flex;
         align-items: center;
         gap: 12px;
-        font-weight: 500;
-      }
-      .menu-item i {
-        font-size: 20px;
       }
       .menu-item:hover {
-        background: #f8f9fa;
+        background: var(--selection-bg);
       }
       .menu-item.delete {
-        color: #d93025;
-        border-top: 1px solid #eee;
+        color: #f28b82;
+        border-top: 1px solid var(--border-color);
       }
     </style>
   </head>
@@ -201,21 +263,31 @@
       Last fed: <span id="timer-text">--</span> ago
     </div>
 
+    <button id="theme-toggle"><i class="ph ph-moon"></i></button>
+
     <div class="main-content">
       <h1>Log feeding</h1>
-      <input
-        type="number"
-        id="volume"
-        placeholder="Volume in ml"
-        inputmode="decimal"
-      />
-      <textarea id="note" placeholder="Note (optional)"></textarea>
+      <div class="input-group">
+        <input
+          type="number"
+          id="volume"
+          placeholder="Volume in ml"
+          inputmode="decimal"
+        />
+      </div>
+      <div class="input-group">
+        <textarea
+          id="note"
+          placeholder="Note (optional)"
+          maxlength="140"
+        ></textarea>
+        <div id="char-counter">0 / 140</div>
+      </div>
       <button class="btn-submit" id="logBtn">Submit</button>
 
       <div class="stats-bar">
         <div class="stats-label">
-          <span id="volume-icon-container"></span>
-          <span>Last 24h</span>
+          <span id="volume-icon-container"></span><span>Last 24h</span>
         </div>
         <span id="rolling-24h">0 ml</span>
       </div>
@@ -263,6 +335,22 @@
       let lastFeedingTimestamp = null;
       const menu = document.getElementById("context-menu");
       const statusBar = document.getElementById("status-bar");
+      const themeBtn = document.getElementById("theme-toggle");
+
+      themeBtn.onclick = () => {
+        const current = document.body.getAttribute("data-theme");
+        const target = current === "dark" ? "light" : "dark";
+        document.body.setAttribute("data-theme", target);
+        themeBtn.innerHTML =
+          target === "dark"
+            ? '<i class="ph-fill ph-sun"></i>'
+            : '<i class="ph ph-moon"></i>';
+      };
+
+      document.getElementById("note").oninput = (e) => {
+        document.getElementById("char-counter").innerText =
+          `${e.target.value.length} / 140`;
+      };
 
       function updateTimer() {
         if (!lastFeedingTimestamp) return;
@@ -272,16 +360,13 @@
         document.getElementById("timer-text").innerHTML =
           `<span class="time-bold">${hours}h ${minutes}m</span>`;
 
-        if (diff < 3600000) {
+        if (diff < 3600000)
           statusBar.style.backgroundColor = "var(--status-green)";
-          statusBar.style.color = "white";
-        } else if (diff < 9000000) {
+        else if (diff < 9000000)
           statusBar.style.backgroundColor = "var(--status-yellow)";
-          statusBar.style.color = "#1a1a1a";
-        } else {
-          statusBar.style.backgroundColor = "var(--status-red)";
-          statusBar.style.color = "white";
-        }
+        else statusBar.style.backgroundColor = "var(--status-red)";
+        statusBar.style.color =
+          diff >= 3600000 && diff < 9000000 ? "#1a1a1a" : "white";
       }
       setInterval(updateTimer, 30000);
 
@@ -321,13 +406,12 @@
           .reduce((s, e) => s + e[1].amount, 0);
         rollingDisplay.innerText = `${total24h} ml`;
 
-        if (total24h > 580) {
+        if (total24h > 580)
           iconContainer.innerHTML = `<i class="ph-fill ph-check-circle stats-icon" style="color: var(--status-green);"></i>`;
-        } else if (total24h > 480) {
+        else if (total24h > 480)
           iconContainer.innerHTML = `<i class="ph-fill ph-warning-circle stats-icon" style="color: var(--status-yellow);"></i>`;
-        } else {
+        else
           iconContainer.innerHTML = `<i class="ph-fill ph-warning-octagon stats-icon" style="color: var(--status-red);"></i>`;
-        }
 
         const groups = entries.reduce((acc, [id, val]) => {
           const d = new Date(val.timestamp).toLocaleDateString("en-GB", {
@@ -358,12 +442,20 @@
         setupInteractions();
       });
 
+      function clearSelection() {
+        document
+          .querySelectorAll(".log-card")
+          .forEach((c) => c.classList.remove("selected"));
+      }
+
       function setupInteractions() {
         document.querySelectorAll(".log-card").forEach((card) => {
           let timer;
           const id = card.getAttribute("data-id");
           const handleMenu = (e) => {
             e.preventDefault();
+            clearSelection();
+            card.classList.add("selected"); // Highlight current card
             currentActiveLogId = id;
             const x = e.pageX || (e.touches ? e.touches[0].pageX : 0);
             const y = e.pageY || (e.touches ? e.touches[0].pageY : 0);
@@ -382,28 +474,24 @@
       document.getElementById("menu-delete").onclick = () => {
         if (confirm("Delete this entry?"))
           remove(ref(db, `feedings/${currentActiveLogId}`));
-        menu.style.display = "none";
       };
 
       document.getElementById("menu-edit").onclick = () => {
-        const newVol = prompt("Edit volume (ml):");
-        if (newVol && !isNaN(newVol))
+        const val = prompt("New volume (ml):");
+        if (val)
           update(ref(db, `feedings/${currentActiveLogId}`), {
-            amount: parseFloat(newVol),
+            amount: parseFloat(val),
           });
-        menu.style.display = "none";
       };
 
-      window.addEventListener("click", () => {
+      window.onclick = () => {
         menu.style.display = "none";
-      });
-      window.addEventListener(
-        "scroll",
-        () => {
-          menu.style.display = "none";
-        },
-        { passive: true },
-      );
+        clearSelection();
+      };
+      window.onscroll = () => {
+        menu.style.display = "none";
+        clearSelection();
+      };
     </script>
   </body>
 </html>
